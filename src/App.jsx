@@ -19,9 +19,43 @@ import { Loader2 } from 'lucide-react';
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Initialize active tab from URL query param, hash, or localStorage
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const validTabs = ['dashboard', 'properties', 'bookings', 'settlements', 'settings'];
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && validTabs.includes(tabParam)) return tabParam;
+
+      const hashParam = window.location.hash.replace('#', '');
+      if (hashParam && validTabs.includes(hashParam)) return hashParam;
+
+      const savedTab = localStorage.getItem('hotels_admin_active_tab');
+      if (savedTab && validTabs.includes(savedTab)) return savedTab;
+    } catch (e) {
+      // Ignore fallback
+    }
+    return 'dashboard';
+  });
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'Indonesia' | 'Malaysia' | 'Singapore'
+
+  // Initialize selected region from URL query param or localStorage
+  const [selectedRegion, setSelectedRegion] = useState(() => {
+    try {
+      const validRegions = ['all', 'Indonesia', 'Malaysia', 'Singapore'];
+      const params = new URLSearchParams(window.location.search);
+      const regionParam = params.get('region');
+      if (regionParam && validRegions.includes(regionParam)) return regionParam;
+
+      const savedRegion = localStorage.getItem('hotels_admin_selected_region');
+      if (savedRegion && validRegions.includes(savedRegion)) return savedRegion;
+    } catch (e) {
+      // Ignore fallback
+    }
+    return 'all';
+  });
 
   // Admin Data states
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -29,6 +63,49 @@ export default function App() {
   const [applications, setApplications] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [settlements, setSettlements] = useState([]);
+
+  // Synchronize active tab and selected region with URL params & localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('hotels_admin_active_tab', activeTab);
+      localStorage.setItem('hotels_admin_selected_region', selectedRegion);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', activeTab);
+      if (selectedRegion && selectedRegion !== 'all') {
+        params.set('region', selectedRegion);
+      } else {
+        params.delete('region');
+      }
+      const newQuery = params.toString();
+      const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+      window.history.replaceState(null, '', newUrl);
+    } catch (e) {
+      // Ignore storage/history access restriction
+    }
+  }, [activeTab, selectedRegion]);
+
+  // Handle browser back and forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const validTabs = ['dashboard', 'properties', 'bookings', 'settlements', 'settings'];
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && validTabs.includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+      const regionParam = params.get('region');
+      const validRegions = ['all', 'Indonesia', 'Malaysia', 'Singapore'];
+      if (regionParam && validRegions.includes(regionParam)) {
+        setSelectedRegion(regionParam);
+      } else {
+        setSelectedRegion('all');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -78,6 +155,13 @@ export default function App() {
   const handleLogout = () => {
     removeAuthToken();
     removeAuthUser();
+    try {
+      localStorage.removeItem('hotels_admin_active_tab');
+      localStorage.removeItem('hotels_admin_selected_region');
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch (e) {
+      // Ignore
+    }
     setUser(null);
     setDashboardStats(null);
     setHotels([]);
