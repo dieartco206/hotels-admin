@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Mail, ArrowRight, KeyRound, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, KeyRound } from 'lucide-react';
 import { adminApi } from '../services/api';
 
 export default function Login({ onLoginSuccess }) {
@@ -107,8 +107,8 @@ export default function Login({ onLoginSuccess }) {
             >
               <div>
                 <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>One-Click Superadmin Demo</span>
+                  <KeyRound className="w-3.5 h-3.5 text-slate-800" />
+                  <span>Akses Cepat Superadmin Demo</span>
                 </div>
                 <div className="text-[11px] text-slate-500">admin@hotels.com • Full Permissions</div>
               </div>
