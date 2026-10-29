@@ -21,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('all'); // 'all' | 'Indonesia' | 'Malaysia' | 'Singapore'
 
   // Admin Data states
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -98,6 +99,8 @@ export default function App() {
         onLogout={handleLogout} 
         isSidebarOpen={isMobileSidebarOpen}
         onToggleSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+        selectedRegion={selectedRegion}
+        onSelectRegion={setSelectedRegion}
       />
 
       <div className="flex-1 w-full flex min-h-0">
@@ -109,7 +112,7 @@ export default function App() {
           onClose={() => setIsMobileSidebarOpen(false)}
         />
 
-        <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 overflow-y-auto">
+        <main className="flex-1 w-full min-w-0 p-3 sm:p-6 lg:p-8 overflow-y-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-slate-900" />
@@ -120,7 +123,11 @@ export default function App() {
               {activeTab === 'dashboard' && (
                 <Dashboard
                   stats={dashboardStats}
+                  hotels={hotels}
+                  bookings={bookings}
                   onNavigate={setActiveTab}
+                  selectedRegion={selectedRegion}
+                  onSelectRegion={setSelectedRegion}
                 />
               )}
 
@@ -129,6 +136,8 @@ export default function App() {
                   hotels={hotels}
                   applications={applications}
                   onRefresh={loadAllAdminData}
+                  selectedRegion={selectedRegion}
+                  onSelectRegion={setSelectedRegion}
                 />
               )}
 
@@ -136,6 +145,8 @@ export default function App() {
                 <AllBookings
                   bookings={bookings}
                   onRefresh={loadAllAdminData}
+                  selectedRegion={selectedRegion}
+                  onSelectRegion={setSelectedRegion}
                 />
               )}
 
@@ -143,11 +154,15 @@ export default function App() {
                 <SettlementsAudit
                   settlements={settlements}
                   onRefresh={loadAllAdminData}
+                  selectedRegion={selectedRegion}
+                  onSelectRegion={setSelectedRegion}
                 />
               )}
 
               {activeTab === 'settings' && (
-                <PlatformSettings />
+                <PlatformSettings
+                  selectedRegion={selectedRegion}
+                />
               )}
             </>
           )}

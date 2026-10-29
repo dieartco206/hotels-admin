@@ -11,13 +11,18 @@ import {
   User,
   Building2,
   DollarSign,
-  Loader2
+  Loader2,
+  RotateCcw
 } from 'lucide-react';
 import { adminApi } from '../services/api';
 
-export default function AllBookings({ bookings = [], onRefresh }) {
+export default function AllBookings({ 
+  bookings = [], 
+  onRefresh,
+  selectedRegion = 'all',
+  onSelectRegion
+}) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [countryFilter, setCountryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cancellingId, setCancellingId] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -42,6 +47,22 @@ export default function AllBookings({ bookings = [], onRefresh }) {
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
+      // 1. Regional Isolation
+      const hotelCountry = (b.hotel?.country || '').toLowerCase();
+      const hotelCity = (b.hotel?.city || '').toLowerCase();
+
+      if (selectedRegion === 'Indonesia') {
+        const isIndo = hotelCountry.includes('indonesia') || ['bali', 'jakarta', 'bandung', 'yogyakarta'].includes(hotelCity);
+        if (!isIndo) return false;
+      } else if (selectedRegion === 'Malaysia') {
+        const isMalay = hotelCountry.includes('malaysia') || ['kuala lumpur', 'penang', 'langkawi'].includes(hotelCity);
+        if (!isMalay) return false;
+      } else if (selectedRegion === 'Singapore') {
+        const isSG = hotelCountry.includes('singapore') || hotelCity.includes('singapore');
+        if (!isSG) return false;
+      }
+
+      // 2. Search
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !term ||
@@ -50,39 +71,64 @@ export default function AllBookings({ bookings = [], onRefresh }) {
         b.guest_email?.toLowerCase().includes(term) ||
         (b.hotel?.name && b.hotel.name.toLowerCase().includes(term));
 
-      const hotelCountry = (b.hotel?.country || '').toLowerCase();
-      const hotelCity = (b.hotel?.city || '').toLowerCase();
-
-      const matchesCountry =
-        countryFilter === 'all' ||
-        (countryFilter === 'SG' && (hotelCountry.includes('singapore') || hotelCity.includes('singapore'))) ||
-        (countryFilter === 'MY' && (hotelCountry.includes('malaysia') || ['kuala lumpur', 'penang', 'langkawi'].includes(hotelCity))) ||
-        (countryFilter === 'ID' && (hotelCountry.includes('indonesia') || ['bali', 'jakarta', 'bandung', 'yogyakarta'].includes(hotelCity)));
-
+      // 3. Status
       const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
 
-      return matchesSearch && matchesCountry && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
-  }, [bookings, searchTerm, countryFilter, statusFilter]);
+  }, [bookings, selectedRegion, searchTerm, statusFilter]);
+
+  const currentRegionName = selectedRegion === 'all' 
+    ? 'Semua Wilayah (Cross-Border)' 
+    : selectedRegion === 'Indonesia' ? '🇮🇩 Indonesia' : selectedRegion === 'Malaysia' ? '🇲🇾 Malaysia' : '🇸🇬 Singapore';
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* 1. Header Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Master Reservations Audit
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300">
-              {bookings.length} Total Bookings
+              {filtered.length} Bookings
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
-            Audit live cross-border guest reservations across Singapore, Indonesia, and Malaysia partner networks.
+            Audit live guest reservations. Memantau check-in, detail tamu, dan aliran komisi platform.
           </p>
         </div>
+
+        {selectedRegion !== 'all' && (
+          <button
+            onClick={() => onSelectRegion('all')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all self-start md:self-auto cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Lihat Semua Wilayah</span>
+          </button>
+        )}
       </div>
+
+      {/* 2. Active Region Isolation Banner */}
+      {selectedRegion !== 'all' && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl sm:text-2xl leading-none">
+              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+            </span>
+            <div>
+              <div className="font-extrabold text-slate-900 flex items-center gap-2">
+                <span>Reservasi Terisolasi: {selectedRegion}</span>
+              </div>
+              <p className="text-slate-600 text-xs mt-0.5">
+                Hanya menampilkan transaksi pemesanan tamu pada hotel di negara <strong>{selectedRegion}</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm text-emerald-800 shadow-xs animate-in fade-in">
@@ -91,58 +137,37 @@ export default function AllBookings({ bookings = [], onRefresh }) {
         </div>
       )}
 
-      {/* 2. Search & Filter Bar */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      {/* 3. Search & Filter Bar */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
             type="text"
             placeholder="Search code, guest name, email, or hotel..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
             >
               Clear
             </button>
           )}
         </div>
 
-        {/* Territory & Status Filter */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
-          <span className="text-xs font-semibold text-slate-400 shrink-0 hidden sm:inline">Territory:</span>
-          {[
-            { id: 'all', label: 'All Territories' },
-            { id: 'SG', label: '🇸🇬 Singapore' },
-            { id: 'MY', label: '🇲🇾 Malaysia' },
-            { id: 'ID', label: '🇮🇩 Indonesia' },
-          ].map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setCountryFilter(c.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                countryFilter === c.id
-                  ? 'bg-slate-900 text-white font-bold shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-
-          <div className="h-5 w-[1px] bg-slate-200 mx-1 shrink-0" />
-
+        {/* Status Filter */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-semibold text-slate-400 hidden sm:inline">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200/70 border border-transparent rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition-colors cursor-pointer"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200/70 border border-transparent rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition-colors cursor-pointer w-full sm:w-auto"
           >
-            <option value="all">All Status</option>
+            <option value="all">Semua Status</option>
             <option value="confirmed">Confirmed</option>
             <option value="checked_in">Checked In</option>
             <option value="completed">Completed</option>
@@ -151,16 +176,16 @@ export default function AllBookings({ bookings = [], onRefresh }) {
         </div>
       </div>
 
-      {/* 3. Full-Width Bookings Ledger Table */}
+      {/* 4. Full-Width Bookings Ledger Table (Responsive Scroll) */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-xs">
             <BookOpenCheck className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-            No booking transactions found matching criteria.
+            Tidak ada transaksi reservasi untuk wilayah {currentRegionName}.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[760px] text-left text-xs sm:text-sm">
               <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                 <tr>
                   <th className="py-3.5 px-5">Booking Code</th>
@@ -168,7 +193,7 @@ export default function AllBookings({ bookings = [], onRefresh }) {
                   <th className="py-3.5 px-4">Guest Info</th>
                   <th className="py-3.5 px-4">Stay Dates</th>
                   <th className="py-3.5 px-4">Gross Total</th>
-                  <th className="py-3.5 px-4">15% Take-Rate</th>
+                  <th className="py-3.5 px-4">15% Take</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
@@ -204,7 +229,7 @@ export default function AllBookings({ bookings = [], onRefresh }) {
                       {/* Dates */}
                       <td className="py-4 px-4 text-slate-600 whitespace-nowrap">
                         <div className="font-medium text-slate-800">{checkIn} – {checkOut}</div>
-                        <div className="text-[10px] text-slate-400">{b.nights || 1} Night(s)</div>
+                        <div className="text-[10px] text-slate-400">{b.nights || 1} Malam</div>
                       </td>
 
                       {/* Gross Amount */}
@@ -248,7 +273,7 @@ export default function AllBookings({ bookings = [], onRefresh }) {
                             ) : (
                               <XOctagon className="w-3.5 h-3.5" />
                             )}
-                            <span>Cancel & Refund</span>
+                            <span>Batalkan & Refund</span>
                           </button>
                         ) : (
                           <span className="text-slate-400 text-xs italic">Refunded</span>
@@ -265,10 +290,10 @@ export default function AllBookings({ bookings = [], onRefresh }) {
         {/* Footer */}
         <div className="p-4 bg-slate-50/60 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
           <div>
-            Showing <strong className="text-slate-900">{filtered.length}</strong> of <strong className="text-slate-900">{bookings.length}</strong> total reservations
+            Menampilkan <strong className="text-slate-900">{filtered.length}</strong> reservasi wilayah {currentRegionName}
           </div>
           <div className="font-semibold text-slate-700">
-            Automated Audit & Fraud Shield: <span className="text-emerald-700 font-bold">100% Protected</span>
+            Escrow Guard: <span className="text-emerald-700 font-bold">100% Secure</span>
           </div>
         </div>
       </div>

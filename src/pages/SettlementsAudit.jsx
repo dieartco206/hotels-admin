@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Landmark, 
   DollarSign, 
@@ -7,11 +7,18 @@ import {
   ShieldCheck, 
   Building2,
   Loader2,
-  Clock
+  Clock,
+  Globe2,
+  RotateCcw
 } from 'lucide-react';
 import { adminApi } from '../services/api';
 
-export default function SettlementsAudit({ settlements = [], onRefresh }) {
+export default function SettlementsAudit({ 
+  settlements = [], 
+  onRefresh,
+  selectedRegion = 'all',
+  onSelectRegion
+}) {
   const [approvingId, setApprovingId] = useState(null);
   const [notification, setNotification] = useState(null);
 
@@ -29,27 +36,101 @@ export default function SettlementsAudit({ settlements = [], onRefresh }) {
     }
   };
 
-  const pendingSettlements = settlements.filter((s) => s.status === 'pending');
-  const transferredSettlements = settlements.filter((s) => s.status === 'transferred' || s.status === 'approved');
+  // Filter settlements by selectedRegion
+  const scopedSettlements = useMemo(() => {
+    return settlements.filter((s) => {
+      if (selectedRegion === 'all') return true;
+      const country = (s.hotel?.country || '').toLowerCase();
+      const city = (s.hotel?.city || '').toLowerCase();
+
+      if (selectedRegion === 'Indonesia') {
+        return country.includes('indonesia') || ['bali', 'jakarta', 'bandung', 'yogyakarta'].includes(city);
+      }
+      if (selectedRegion === 'Malaysia') {
+        return country.includes('malaysia') || ['kuala lumpur', 'penang', 'langkawi'].includes(city);
+      }
+      if (selectedRegion === 'Singapore') {
+        return country.includes('singapore') || city.includes('singapore');
+      }
+      return true;
+    });
+  }, [settlements, selectedRegion]);
+
+  const pendingSettlements = scopedSettlements.filter((s) => s.status === 'pending');
+  const transferredSettlements = scopedSettlements.filter((s) => s.status === 'transferred' || s.status === 'approved');
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* 1. Header Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Settlement & Partner Disbursements
+          <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Settlement & Disbursements {selectedRegion !== 'all' ? `• ${selectedRegion}` : ''}
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300">
               {pendingSettlements.length} Pending Approval
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
-            Audit 15% platform take-rate and authorize net payouts to verified hotel partner corporate bank accounts across SG, MY, and ID.
+            {selectedRegion === 'all'
+              ? 'Audit 15% platform take-rate dan otorisasi pembayaran ke rekening bank mitra hotel di SG, MY, dan ID.'
+              : `Disbursement audit khusus mitra hotel di wilayah ${selectedRegion}. Otomatis dipisahkan dari negara lain.`}
           </p>
         </div>
+
+        {selectedRegion !== 'all' && (
+          <button
+            onClick={() => onSelectRegion('all')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all self-start md:self-auto cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Lihat Semua Negara</span>
+          </button>
+        )}
       </div>
+
+      {/* 2. Active Region Isolation Banner */}
+      {selectedRegion !== 'all' ? (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl sm:text-2xl leading-none">
+              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+            </span>
+            <div>
+              <div className="font-extrabold text-slate-900 flex items-center gap-2">
+                <span>Settlement Terisolasi: {selectedRegion}</span>
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold uppercase">
+                  Data Terisolasi
+                </span>
+              </div>
+              <p className="text-slate-600 text-xs mt-0.5">
+                Menampilkan hanya riwayat disbursement rekening bank mitra hotel di negara <strong>{selectedRegion}</strong>.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectRegion('all')}
+            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Tampilkan Semua Wilayah</span>
+          </button>
+        </div>
+      ) : (
+        <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-slate-600">
+            <Globe2 className="w-4 h-4 text-brand-600 shrink-0" />
+            <span>Mode Cross-Border Aktif: Menampilkan disbursement gabungan seluruh negara.</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-slate-400 font-medium">Pilah Cepat:</span>
+            <button onClick={() => onSelectRegion('Indonesia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇮🇩 ID</button>
+            <button onClick={() => onSelectRegion('Malaysia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇲🇾 MY</button>
+            <button onClick={() => onSelectRegion('Singapore')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇸🇬 SG</button>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm text-emerald-800 shadow-xs animate-in fade-in">
@@ -58,74 +139,74 @@ export default function SettlementsAudit({ settlements = [], onRefresh }) {
         </div>
       )}
 
-      {/* 2. Full-Width Settlements Ledger Table */}
+      {/* 3. Full-Width Settlements Ledger Table (Responsive Scroll) */}
       <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-200/80 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-slate-900">Disbursement Approval Ledger</h2>
             <p className="text-xs text-slate-500 mt-0.5">Automated net settlement calculation minus 15.0% platform take-rate</p>
           </div>
           <span className="text-xs font-semibold text-slate-500">
-            Total Batches: <strong className="text-slate-900 font-bold">{settlements.length}</strong>
+            Total Batches: <strong className="text-slate-900 font-bold">{scopedSettlements.length}</strong>
           </span>
         </div>
 
-        {settlements.length === 0 ? (
+        {scopedSettlements.length === 0 ? (
           <div className="text-center py-16 text-xs text-slate-400">
             <Landmark className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-            No settlement statements in queue.
+            No settlement statements in queue for this region.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
+            <table className="w-full text-left text-xs sm:text-sm min-w-[760px]">
               <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                 <tr>
-                  <th className="py-3.5 px-5 font-semibold">Settlement Code</th>
+                  <th className="py-3.5 px-4 font-semibold">Settlement Code</th>
                   <th className="py-3.5 px-4 font-semibold">Hotel Partner</th>
                   <th className="py-3.5 px-4 font-semibold">Corporate Bank</th>
                   <th className="py-3.5 px-4 font-semibold">Gross GBV</th>
                   <th className="py-3.5 px-4 font-semibold">15% Commission</th>
                   <th className="py-3.5 px-4 font-semibold">Net Payout</th>
                   <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-5 font-semibold text-right">Authorize</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">Authorize</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {settlements.map((s) => {
+                {scopedSettlements.map((s) => {
                   const isPending = s.status === 'pending';
                   const isLoading = approvingId === s.id;
 
                   return (
                     <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
                         {s.settlement_code}
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="font-bold text-slate-900">{s.hotel?.name || 'Hotel Partner'}</div>
                         <div className="text-[11px] text-slate-500">{s.hotel?.city}, {s.hotel?.country}</div>
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap text-slate-600">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600">
                         <div className="font-medium text-slate-800">{s.bank_name || 'Corporate Wire'}</div>
                         <div className="text-[11px] text-slate-400 font-mono">{s.bank_account || '8892-0192-4410'}</div>
                       </td>
 
-                      <td className="py-4 px-4 font-mono font-medium text-slate-800 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono font-medium text-slate-800 whitespace-nowrap">
                         <span className="text-xs text-slate-400 mr-1">{s.currency}</span>
                         {Math.round(s.gross_amount).toLocaleString('en-US')}
                       </td>
 
-                      <td className="py-4 px-4 font-mono font-bold text-amber-600 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono font-bold text-amber-600 whitespace-nowrap">
                         +{s.currency} {Math.round(s.platform_commission).toLocaleString('en-US')}
                       </td>
 
-                      <td className="py-4 px-4 font-mono font-black text-emerald-700 whitespace-nowrap text-sm">
+                      <td className="py-3.5 px-4 font-mono font-black text-emerald-700 whitespace-nowrap text-sm">
                         <span className="text-xs text-emerald-600 mr-1">{s.currency}</span>
                         {Math.round(s.net_payout).toLocaleString('en-US')}
                       </td>
 
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                           s.status === 'transferred' || s.status === 'approved'
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
@@ -138,12 +219,12 @@ export default function SettlementsAudit({ settlements = [], onRefresh }) {
                         </span>
                       </td>
 
-                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
                         {isPending ? (
                           <button
                             onClick={() => handleApprovePayout(s)}
                             disabled={isLoading}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                           >
                             {isLoading ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -166,7 +247,7 @@ export default function SettlementsAudit({ settlements = [], onRefresh }) {
           </div>
         )}
 
-        <div className="p-4 bg-slate-50/60 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+        <div className="p-3.5 sm:p-4 bg-slate-50/60 border-t border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-500">
           <div>
             Disbursements Verified & Escrow Protected
           </div>

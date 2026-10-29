@@ -12,11 +12,11 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export default function PlatformSettings() {
+export default function PlatformSettings({ selectedRegion = 'all' }) {
   const currencies = [
-    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: '1.000 (Base)', flag: '🇸🇬' },
-    { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', rate: '3.485 MYR/SGD', flag: '🇲🇾' },
-    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', rate: '11,850 IDR/SGD', flag: '🇮🇩' },
+    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: '1.000 (Base)', flag: '🇸🇬', country: 'Singapore' },
+    { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', rate: '3.485 MYR/SGD', flag: '🇲🇾', country: 'Malaysia' },
+    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', rate: '11,850 IDR/SGD', flag: '🇮🇩', country: 'Indonesia' },
   ];
 
   return (
@@ -85,20 +85,37 @@ export default function PlatformSettings() {
           </div>
 
           <div className="space-y-2">
-            {currencies.map((c) => (
-              <div key={c.code} className="p-3 sm:p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg">{c.flag}</span>
-                  <div>
-                    <div className="font-bold text-slate-900">{c.code} ({c.symbol})</div>
-                    <div className="text-[11px] text-slate-500">{c.name}</div>
+            {currencies.map((c) => {
+              const isRegionSelected = selectedRegion.toLowerCase() === c.country.toLowerCase();
+              return (
+                <div 
+                  key={c.code} 
+                  className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between transition-all ${
+                    isRegionSelected
+                      ? 'bg-amber-500/10 border-amber-500/80 shadow-xs ring-1 ring-amber-500/30'
+                      : 'bg-slate-50/80 border-slate-200/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">{c.flag}</span>
+                    <div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>{c.code} ({c.symbol})</span>
+                        {isRegionSelected && (
+                          <span className="px-1.5 py-0.2 bg-amber-600 text-white rounded text-[10px] font-bold">
+                            Active Scope
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500">{c.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right font-mono font-bold text-slate-800 text-xs sm:text-sm">
+                    {c.rate}
                   </div>
                 </div>
-                <div className="text-right font-mono font-bold text-slate-800 text-xs sm:text-sm">
-                  {c.rate}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <p className="text-slate-500 text-xs leading-relaxed">

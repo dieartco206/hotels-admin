@@ -16,17 +16,23 @@ import {
   Mail,
   Phone,
   Calendar,
-  Sparkles as Dummy, // not used
   Check,
   X,
-  Loader2
+  Loader2,
+  Globe2,
+  RotateCcw
 } from 'lucide-react';
 import { adminApi } from '../services/api';
 
-export default function HotelsAndPartners({ applications = [], hotels = [], onRefresh }) {
+export default function HotelsAndPartners({ 
+  applications = [], 
+  hotels = [], 
+  onRefresh,
+  selectedRegion = 'all',
+  onSelectRegion
+}) {
   const [activeTab, setActiveTab] = useState('hotels'); // 'hotels' | 'applications'
   const [searchTerm, setSearchTerm] = useState('');
-  const [territoryFilter, setTerritoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -73,11 +79,36 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
     }
   };
 
-  const pendingApps = applications.filter((a) => a.status === 'pending');
+  // Filter applications by selectedRegion
+  const scopedApplications = useMemo(() => {
+    return applications.filter((app) => {
+      if (selectedRegion === 'all') return true;
+      const city = (app.city || '').toLowerCase();
+      if (selectedRegion === 'Indonesia') {
+        return ['bali', 'jakarta', 'bandung', 'yogyakarta', 'surabaya', 'lombok'].includes(city) || (app.country || '').toLowerCase().includes('indonesia');
+      }
+      if (selectedRegion === 'Malaysia') {
+        return ['kuala lumpur', 'penang', 'langkawi', 'johor'].includes(city) || (app.country || '').toLowerCase().includes('malaysia');
+      }
+      if (selectedRegion === 'Singapore') {
+        return city.includes('singapore') || (app.country || '').toLowerCase().includes('singapore');
+      }
+      return true;
+    });
+  }, [applications, selectedRegion]);
 
-  // Filtered hotels list
+  const pendingApps = scopedApplications.filter((a) => a.status === 'pending');
+
+  // Filtered hotels list by selectedRegion & local search/filters
   const filteredHotels = useMemo(() => {
     return hotels.filter((h) => {
+      // 1. Global Region Filter
+      const countryInfo = getCountryInfo(h.country, h.city);
+      if (selectedRegion !== 'all' && countryInfo.name.toLowerCase() !== selectedRegion.toLowerCase()) {
+        return false;
+      }
+
+      // 2. Search Term
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = 
         !term ||
@@ -85,58 +116,58 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
         (h.city && h.city.toLowerCase().includes(term)) ||
         (h.area && h.area.toLowerCase().includes(term));
 
-      const countryInfo = getCountryInfo(h.country, h.city);
-      const matchesTerritory = 
-        territoryFilter === 'all' ||
-        countryInfo.name.toLowerCase() === territoryFilter.toLowerCase();
-
+      // 3. Status Filter
       const matchesStatus = 
         statusFilter === 'all' || 
         h.status === statusFilter;
 
-      return matchesSearch && matchesTerritory && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
-  }, [hotels, searchTerm, territoryFilter, statusFilter]);
+  }, [hotels, selectedRegion, searchTerm, statusFilter]);
+
+  const currentRegionName = selectedRegion === 'all' 
+    ? 'Semua Wilayah (Cross-Border)' 
+    : selectedRegion === 'Indonesia' ? '🇮🇩 Indonesia' : selectedRegion === 'Malaysia' ? '🇲🇾 Malaysia' : '🇸🇬 Singapore';
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* 1. Header Card (Fluid Full-Width) */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Properties & Hotel Partners
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300">
-              {hotels.length} Properties Listed
+              {filteredHotels.length} Properties
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
-            Live cross-border inventory control tower. Audit hotel properties, review partnership onboarding requests, and toggle listing statuses.
+            Live inventory control tower. Audit property details, manage listing statuses, and review onboarding requests.
           </p>
         </div>
 
         {/* Tab switch (Segmented Control) */}
-        <div className="flex bg-slate-100 p-1 rounded-xl self-start md:self-auto shrink-0 border border-slate-200/60">
+        <div className="flex bg-slate-100 p-1 rounded-xl self-stretch sm:self-start md:self-auto shrink-0 border border-slate-200/60">
           <button
             onClick={() => setActiveTab('hotels')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'hotels' 
                 ? 'bg-white text-slate-900 shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Hotel Directory ({hotels.length})
+            Hotel Directory ({filteredHotels.length})
           </button>
           <button
             onClick={() => setActiveTab('applications')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'applications' 
                 ? 'bg-white text-slate-900 shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>Partner Onboarding</span>
+            <span>Onboarding</span>
             {pendingApps.length > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-extrabold animate-pulse">
                 {pendingApps.length}
@@ -145,6 +176,48 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
           </button>
         </div>
       </div>
+
+      {/* 2. Active Region Isolation Banner */}
+      {selectedRegion !== 'all' ? (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl sm:text-2xl leading-none">
+              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+            </span>
+            <div>
+              <div className="font-extrabold text-slate-900 flex items-center gap-2">
+                <span>Filter Wilayah Aktif: {selectedRegion}</span>
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-md text-[10px] font-bold uppercase">
+                  Data Terisolasi
+                </span>
+              </div>
+              <p className="text-slate-600 text-xs mt-0.5">
+                Menampilkan hanya properti dan pendaftaran kemitraan di wilayah <strong>{selectedRegion}</strong> agar data tidak tercampur aduk.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectRegion && onSelectRegion('all')}
+            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Tampilkan Semua Wilayah</span>
+          </button>
+        </div>
+      ) : (
+        <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-slate-600">
+            <Globe2 className="w-4 h-4 text-brand-600 shrink-0" />
+            <span>Mode Cross-Border Aktif: Menampilkan gabungan seluruh properti (Singapura, Malaysia, Indonesia).</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-slate-400 font-medium">Pilah Cepat:</span>
+            <button onClick={() => onSelectRegion('Indonesia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇮🇩 ID</button>
+            <button onClick={() => onSelectRegion('Malaysia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇲🇾 MY</button>
+            <button onClick={() => onSelectRegion('Singapore')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇸🇬 SG</button>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm text-emerald-800 shadow-xs animate-in fade-in duration-200">
@@ -156,69 +229,47 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
       {/* Tab 1: Hotel Directory */}
       {activeTab === 'hotels' && (
         <div className="space-y-4">
-          {/* Search & Territory Toolbar */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search & Status Toolbar */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[240px]">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
                 type="text"
-                placeholder="Search by hotel name, city, or area..."
+                placeholder="Search hotel name, city, area..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs"
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                 >
                   Clear
                 </button>
               )}
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
-              <span className="text-xs font-semibold text-slate-400 shrink-0 hidden sm:inline">Territory:</span>
-              {[
-                { id: 'all', label: 'All Territories' },
-                { id: 'Singapore', label: '🇸🇬 Singapore' },
-                { id: 'Malaysia', label: '🇲🇾 Malaysia' },
-                { id: 'Indonesia', label: '🇮🇩 Indonesia' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTerritoryFilter(t.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                    territoryFilter === t.id
-                      ? 'bg-slate-900 text-white font-bold shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-
-              <div className="h-5 w-[1px] bg-slate-200 mx-1 shrink-0" />
-
-              {/* Status Filter */}
+            {/* Quick Status Filter */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-semibold text-slate-400 hidden sm:inline">Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200/70 border border-transparent rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition-colors cursor-pointer"
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200/70 border border-transparent rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition-colors cursor-pointer w-full sm:w-auto"
               >
-                <option value="all">All Status</option>
+                <option value="all">Semua Status</option>
                 <option value="active">Active Only</option>
                 <option value="suspended">Suspended Only</option>
               </select>
             </div>
           </div>
 
-          {/* Full-Width Hotels Table */}
+          {/* Full-Width Hotels Table (Responsive Horizontal Scroll) */}
           <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
+            <div className="overflow-x-auto scrollbar-thin">
+              <table className="w-full min-w-[760px] text-left text-xs sm:text-sm">
                 <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                   <tr>
                     <th className="py-3.5 px-5">Property</th>
@@ -226,16 +277,16 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
                     <th className="py-3.5 px-4">Classification</th>
                     <th className="py-3.5 px-4">Starting Rate</th>
                     <th className="py-3.5 px-4">Rooms</th>
-                    <th className="py-3.5 px-4">Listing Status</th>
+                    <th className="py-3.5 px-4">Status</th>
                     <th className="py-3.5 px-5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredHotels.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-12 text-center text-slate-400">
-                        <Building2 className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                        No luxury properties match your search or filter criteria.
+                      <td colSpan="7" className="py-16 text-center text-slate-400">
+                        <Building2 className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                        Tidak ada hotel yang sesuai dengan pencarian atau wilayah {currentRegionName}.
                       </td>
                     </tr>
                   ) : (
@@ -264,7 +315,7 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
                                     {h.type}
                                   </span>
                                   {h.badge && (
-                                    <span className="text-amber-700 font-medium">
+                                    <span className="text-amber-700 font-medium truncate">
                                       • {h.badge}
                                     </span>
                                   )}
@@ -352,11 +403,11 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
             {/* Table Footer Summary */}
             <div className="p-4 bg-slate-50/60 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
               <div>
-                Showing <span className="font-bold text-slate-900">{filteredHotels.length}</span> of <span className="font-bold text-slate-900">{hotels.length}</span> verified luxury properties
+                Menampilkan <strong className="text-slate-900 font-bold">{filteredHotels.length}</strong> properti di wilayah <strong className="text-slate-900 font-bold">{currentRegionName}</strong>
               </div>
               <div className="flex items-center gap-4">
-                <span>Distribution Take-rate: <strong className="text-brand-600 font-bold">15.0%</strong></span>
-                <span>Active Properties: <strong className="text-emerald-700 font-bold">{hotels.filter(h => h.status === 'active').length}</strong></span>
+                <span>Take-rate: <strong className="text-brand-600 font-bold">15.0%</strong></span>
+                <span>Aktif: <strong className="text-emerald-700 font-bold">{filteredHotels.filter(h => h.status === 'active').length}</strong></span>
               </div>
             </div>
           </div>
@@ -366,32 +417,32 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
       {/* Tab 2: Partner Onboarding Requests */}
       {activeTab === 'applications' && (
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-200/80 flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2">
             <div>
               <h2 className="text-base font-bold text-slate-900">Inbound Hotelier Partnership Requests</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Audit property documentation, ownership credentials, and commission agreements before onboarding.</p>
+              <p className="text-xs text-slate-500 mt-0.5">Audit permohonan mitra baru khusus wilayah {currentRegionName}.</p>
             </div>
             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
-              {pendingApps.length} Pending Actions
+              {pendingApps.length} Permohonan Tertunda
             </span>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {applications.length === 0 ? (
+            {scopedApplications.length === 0 ? (
               <div className="text-center py-16 text-slate-400 text-xs">
                 <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                No inbound hotel partnership applications currently on record.
+                Tidak ada permohonan kemitraan hotel untuk wilayah {currentRegionName}.
               </div>
             ) : (
-              applications.map((app) => {
+              scopedApplications.map((app) => {
                 const isPending = app.status === 'pending';
                 const isLoading = actionLoadingId === app.id;
 
                 return (
-                  <div key={app.id} className="p-5 sm:p-6 hover:bg-slate-50/70 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div key={app.id} className="p-4 sm:p-6 hover:bg-slate-50/70 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="font-black text-slate-900 text-base">{app.property_name}</span>
+                        <span className="font-black text-slate-900 text-sm sm:text-base">{app.property_name}</span>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
                           {app.property_type}
                         </span>
@@ -407,61 +458,61 @@ export default function HotelsAndPartners({ applications = [], hotels = [], onRe
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600">
-                        <div className="flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>Owner: <strong className="text-slate-800">{app.contact_name}</strong></span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{app.email}</span>
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{app.email}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{app.phone}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                      <div className="flex items-center gap-4 text-xs text-slate-500 pt-1 flex-wrap">
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-slate-400" />
                           {app.city}
                         </span>
                         <span>•</span>
-                        <span>Inventory: <strong className="text-slate-800">{app.room_count || 12} Rooms</strong></span>
+                        <span>Kuota: <strong className="text-slate-800">{app.room_count || 12} Kamar</strong></span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          Submitted {new Date(app.created_at).toLocaleDateString()}
+                          Diajukan {new Date(app.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
 
                     {/* Action buttons */}
                     {isPending ? (
-                      <div className="flex items-center gap-2.5 self-end lg:self-auto shrink-0">
+                      <div className="flex items-center gap-2 self-stretch sm:self-end lg:self-auto shrink-0">
                         <button
                           onClick={() => handleReviewApplication(app.id, 'reject')}
                           disabled={isLoading}
-                          className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors disabled:opacity-50 cursor-pointer"
+                          className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors disabled:opacity-50 cursor-pointer"
                         >
-                          Decline Request
+                          Tolak
                         </button>
                         <button
                           onClick={() => handleReviewApplication(app.id, 'approve')}
                           disabled={isLoading}
-                          className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
                           {isLoading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
                           )}
-                          <span>Approve & Onboard</span>
+                          <span>Setujui & Onboard</span>
                         </button>
                       </div>
                     ) : (
                       <div className="text-xs text-slate-400 italic">
-                        {app.notes || `Processed on ${new Date(app.updated_at).toLocaleDateString()}`}
+                        {app.notes || `Diproses pada ${new Date(app.updated_at).toLocaleDateString()}`}
                       </div>
                     )}
                   </div>
