@@ -44,7 +44,7 @@ export default function App() {
   // Initialize selected region from URL query param or localStorage
   const [selectedRegion, setSelectedRegion] = useState(() => {
     try {
-      const validRegions = ['all', 'Indonesia', 'Malaysia', 'Singapore'];
+      const validRegions = ['all', 'Kuala Lumpur', 'Langkawi', 'Penang', 'Melaka', 'Borneo'];
       const params = new URLSearchParams(window.location.search);
       const regionParam = params.get('region');
       if (regionParam && validRegions.includes(regionParam)) return regionParam;
@@ -95,7 +95,7 @@ export default function App() {
         setActiveTab(tabParam);
       }
       const regionParam = params.get('region');
-      const validRegions = ['all', 'Indonesia', 'Malaysia', 'Singapore'];
+      const validRegions = ['all', 'Kuala Lumpur', 'Langkawi', 'Penang', 'Melaka', 'Borneo'];
       if (regionParam && validRegions.includes(regionParam)) {
         setSelectedRegion(regionParam);
       } else {

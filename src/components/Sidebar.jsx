@@ -86,7 +86,7 @@ export default function Sidebar({
             <span>Commission Matrix</span>
           </div>
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Standard OTA distribution fee set at <span className="font-bold text-brand-600">15.0%</span> across Singapore, Indonesia, and Malaysia.
+            Standard OTA distribution fee set at <span className="font-bold text-brand-600">15.0%</span> across all verified Malaysian hotel partners.
           </p>
         </div>
       </div>

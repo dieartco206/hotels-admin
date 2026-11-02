@@ -47,19 +47,12 @@ export default function AllBookings({
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
-      // 1. Regional Isolation
-      const hotelCountry = (b.hotel?.country || '').toLowerCase();
-      const hotelCity = (b.hotel?.city || '').toLowerCase();
-
-      if (selectedRegion === 'Indonesia') {
-        const isIndo = hotelCountry.includes('indonesia') || ['bali', 'jakarta', 'bandung', 'yogyakarta'].includes(hotelCity);
-        if (!isIndo) return false;
-      } else if (selectedRegion === 'Malaysia') {
-        const isMalay = hotelCountry.includes('malaysia') || ['kuala lumpur', 'penang', 'langkawi'].includes(hotelCity);
-        if (!isMalay) return false;
-      } else if (selectedRegion === 'Singapore') {
-        const isSG = hotelCountry.includes('singapore') || hotelCity.includes('singapore');
-        if (!isSG) return false;
+      // 1. Regional Isolation (Malaysia)
+      if (selectedRegion !== 'all') {
+        const q = selectedRegion.toLowerCase();
+        const hotelCity = (b.hotel?.city || '').toLowerCase();
+        const hotelArea = (b.hotel?.area || '').toLowerCase();
+        if (!hotelCity.includes(q) && !hotelArea.includes(q)) return false;
       }
 
       // 2. Search
@@ -79,8 +72,8 @@ export default function AllBookings({
   }, [bookings, selectedRegion, searchTerm, statusFilter]);
 
   const currentRegionName = selectedRegion === 'all' 
-    ? 'Semua Wilayah (Cross-Border)' 
-    : selectedRegion === 'Indonesia' ? '🇮🇩 Indonesia' : selectedRegion === 'Malaysia' ? '🇲🇾 Malaysia' : '🇸🇬 Singapore';
+    ? 'Seluruh Malaysia' 
+    : `Wilayah ${selectedRegion}`;
 
   return (
     <div className="w-full space-y-5 sm:space-y-6">
@@ -116,14 +109,14 @@ export default function AllBookings({
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2.5">
             <span className="text-xl sm:text-2xl leading-none">
-              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+              🇲🇾
             </span>
             <div>
               <div className="font-extrabold text-slate-900 flex items-center gap-2">
                 <span>Reservasi Terisolasi: {selectedRegion}</span>
               </div>
               <p className="text-slate-600 text-xs mt-0.5">
-                Hanya menampilkan transaksi pemesanan tamu pada hotel di negara <strong>{selectedRegion}</strong>.
+                Hanya menampilkan transaksi pemesanan tamu pada hotel di wilayah <strong>{selectedRegion}</strong> di Malaysia.
               </p>
             </div>
           </div>
@@ -234,14 +227,14 @@ export default function AllBookings({
 
                       {/* Gross Amount */}
                       <td className="py-4 px-4 font-black text-slate-900 font-mono whitespace-nowrap">
-                        <span className="text-xs text-slate-400 mr-1">{b.currency}</span>
-                        {Math.round(b.total_amount).toLocaleString('en-US')}
+                        <span className="text-xs text-slate-400 mr-1">RM</span>
+                        {Number(b.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       {/* Commission */}
                       <td className="py-4 px-4 font-bold text-amber-600 font-mono whitespace-nowrap">
-                        <span className="text-xs text-amber-500 mr-1">{b.currency}</span>
-                        {Math.round(commission).toLocaleString('en-US')}
+                        <span className="text-xs text-amber-500 mr-1">RM</span>
+                        {Number(commission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       {/* Status */}

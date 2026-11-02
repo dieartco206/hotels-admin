@@ -37,17 +37,9 @@ export default function HotelsAndPartners({
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Helper to format country & flag accurately
-  const getCountryInfo = (country, city) => {
-    const cNorm = (country || '').toLowerCase();
-    const cityNorm = (city || '').toLowerCase();
-    if (cNorm.includes('singapore') || cNorm === 'sg' || cityNorm.includes('singapore')) {
-      return { flag: '🇸🇬', name: 'Singapore' };
-    }
-    if (cNorm.includes('malaysia') || cNorm === 'my' || ['kuala lumpur', 'penang', 'langkawi'].includes(cityNorm)) {
-      return { flag: '🇲🇾', name: 'Malaysia' };
-    }
-    return { flag: '🇮🇩', name: 'Indonesia' };
+  // Helper to format country & flag accurately (Malaysia focused)
+  const getCountryInfo = () => {
+    return { flag: '🇲🇾', name: 'Malaysia' };
   };
 
   const handleReviewApplication = async (appId, action) => {
@@ -83,17 +75,10 @@ export default function HotelsAndPartners({
   const scopedApplications = useMemo(() => {
     return applications.filter((app) => {
       if (selectedRegion === 'all') return true;
+      const q = selectedRegion.toLowerCase();
       const city = (app.city || '').toLowerCase();
-      if (selectedRegion === 'Indonesia') {
-        return ['bali', 'jakarta', 'bandung', 'yogyakarta', 'surabaya', 'lombok'].includes(city) || (app.country || '').toLowerCase().includes('indonesia');
-      }
-      if (selectedRegion === 'Malaysia') {
-        return ['kuala lumpur', 'penang', 'langkawi', 'johor'].includes(city) || (app.country || '').toLowerCase().includes('malaysia');
-      }
-      if (selectedRegion === 'Singapore') {
-        return city.includes('singapore') || (app.country || '').toLowerCase().includes('singapore');
-      }
-      return true;
+      const name = (app.business_name || '').toLowerCase();
+      return city.includes(q) || name.includes(q);
     });
   }, [applications, selectedRegion]);
 
@@ -102,10 +87,12 @@ export default function HotelsAndPartners({
   // Filtered hotels list by selectedRegion & local search/filters
   const filteredHotels = useMemo(() => {
     return hotels.filter((h) => {
-      // 1. Global Region Filter
-      const countryInfo = getCountryInfo(h.country, h.city);
-      if (selectedRegion !== 'all' && countryInfo.name.toLowerCase() !== selectedRegion.toLowerCase()) {
-        return false;
+      // 1. Global Region Filter (by city/area in Malaysia)
+      if (selectedRegion !== 'all') {
+        const q = selectedRegion.toLowerCase();
+        const matchesCity = (h.city || '').toLowerCase().includes(q);
+        const matchesArea = (h.area || '').toLowerCase().includes(q);
+        if (!matchesCity && !matchesArea) return false;
       }
 
       // 2. Search Term
@@ -126,8 +113,8 @@ export default function HotelsAndPartners({
   }, [hotels, selectedRegion, searchTerm, statusFilter]);
 
   const currentRegionName = selectedRegion === 'all' 
-    ? 'Semua Wilayah (Cross-Border)' 
-    : selectedRegion === 'Indonesia' ? '🇮🇩 Indonesia' : selectedRegion === 'Malaysia' ? '🇲🇾 Malaysia' : '🇸🇬 Singapore';
+    ? 'Seluruh Malaysia' 
+    : `Wilayah ${selectedRegion}`;
 
   return (
     <div className="w-full space-y-5 sm:space-y-6">
@@ -182,7 +169,7 @@ export default function HotelsAndPartners({
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2.5">
             <span className="text-xl sm:text-2xl leading-none">
-              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+              🇲🇾
             </span>
             <div>
               <div className="font-extrabold text-slate-900 flex items-center gap-2">
@@ -208,13 +195,14 @@ export default function HotelsAndPartners({
         <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2 text-slate-600">
             <Globe2 className="w-4 h-4 text-brand-600 shrink-0" />
-            <span>Mode Cross-Border Aktif: Menampilkan gabungan seluruh properti (Singapura, Malaysia, Indonesia).</span>
+            <span>Mode Malaysia Aktif: Menampilkan kurasi 16 hotel & resort mewah di seluruh Malaysia.</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-slate-400 font-medium">Pilah Cepat:</span>
-            <button onClick={() => onSelectRegion('Indonesia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇮🇩 ID</button>
-            <button onClick={() => onSelectRegion('Malaysia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇲🇾 MY</button>
-            <button onClick={() => onSelectRegion('Singapore')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇸🇬 SG</button>
+            <button onClick={() => onSelectRegion('Kuala Lumpur')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">KL</button>
+            <button onClick={() => onSelectRegion('Langkawi')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Langkawi</button>
+            <button onClick={() => onSelectRegion('Penang')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Penang</button>
+            <button onClick={() => onSelectRegion('Melaka')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Melaka</button>
           </div>
         </div>
       )}
@@ -347,8 +335,8 @@ export default function HotelsAndPartners({
                           {/* Starting Rate */}
                           <td className="py-4 px-4 whitespace-nowrap">
                             <div className="font-black text-slate-900 font-mono text-sm">
-                              <span className="text-xs font-bold text-slate-500 mr-1">{h.currency}</span>
-                              {Math.round(h.price_start).toLocaleString('en-US')}
+                              <span className="text-xs font-bold text-slate-500 mr-1">RM</span>
+                              {Number(h.price_start).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="text-[10px] text-slate-400 font-medium mt-0.5">per room / night</div>
                           </td>

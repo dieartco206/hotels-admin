@@ -36,23 +36,14 @@ export default function SettlementsAudit({
     }
   };
 
-  // Filter settlements by selectedRegion
+  // Filter settlements by selectedRegion in Malaysia
   const scopedSettlements = useMemo(() => {
     return settlements.filter((s) => {
       if (selectedRegion === 'all') return true;
-      const country = (s.hotel?.country || '').toLowerCase();
+      const q = selectedRegion.toLowerCase();
       const city = (s.hotel?.city || '').toLowerCase();
-
-      if (selectedRegion === 'Indonesia') {
-        return country.includes('indonesia') || ['bali', 'jakarta', 'bandung', 'yogyakarta'].includes(city);
-      }
-      if (selectedRegion === 'Malaysia') {
-        return country.includes('malaysia') || ['kuala lumpur', 'penang', 'langkawi'].includes(city);
-      }
-      if (selectedRegion === 'Singapore') {
-        return country.includes('singapore') || city.includes('singapore');
-      }
-      return true;
+      const area = (s.hotel?.area || '').toLowerCase();
+      return city.includes(q) || area.includes(q);
     });
   }, [settlements, selectedRegion]);
 
@@ -95,7 +86,7 @@ export default function SettlementsAudit({
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2.5">
             <span className="text-xl sm:text-2xl leading-none">
-              {selectedRegion === 'Indonesia' ? '🇮🇩' : selectedRegion === 'Malaysia' ? '🇲🇾' : '🇸🇬'}
+              🇲🇾
             </span>
             <div>
               <div className="font-extrabold text-slate-900 flex items-center gap-2">
@@ -105,7 +96,7 @@ export default function SettlementsAudit({
                 </span>
               </div>
               <p className="text-slate-600 text-xs mt-0.5">
-                Menampilkan hanya riwayat disbursement rekening bank mitra hotel di negara <strong>{selectedRegion}</strong>.
+                Menampilkan hanya riwayat disbursement akaun bank rakan hotel di wilayah <strong>{selectedRegion}</strong>, Malaysia.
               </p>
             </div>
           </div>
@@ -121,13 +112,14 @@ export default function SettlementsAudit({
         <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2 text-slate-600">
             <Globe2 className="w-4 h-4 text-brand-600 shrink-0" />
-            <span>Mode Cross-Border Aktif: Menampilkan disbursement gabungan seluruh negara.</span>
+            <span>Mode Malaysia Aktif: Menampilkan rekod pembayaran disbursement rakan hotel seluruh Malaysia.</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-slate-400 font-medium">Pilah Cepat:</span>
-            <button onClick={() => onSelectRegion('Indonesia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇮🇩 ID</button>
-            <button onClick={() => onSelectRegion('Malaysia')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇲🇾 MY</button>
-            <button onClick={() => onSelectRegion('Singapore')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">🇸🇬 SG</button>
+            <button onClick={() => onSelectRegion('Kuala Lumpur')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">KL</button>
+            <button onClick={() => onSelectRegion('Langkawi')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Langkawi</button>
+            <button onClick={() => onSelectRegion('Penang')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Penang</button>
+            <button onClick={() => onSelectRegion('Melaka')} className="px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 cursor-pointer">Melaka</button>
           </div>
         </div>
       )}
@@ -193,17 +185,17 @@ export default function SettlementsAudit({
                       </td>
 
                       <td className="py-3.5 px-4 font-mono font-medium text-slate-800 whitespace-nowrap">
-                        <span className="text-xs text-slate-400 mr-1">{s.currency}</span>
-                        {Math.round(s.gross_amount).toLocaleString('en-US')}
+                        <span className="text-xs text-slate-400 mr-1">RM</span>
+                        {Number(s.gross_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       <td className="py-3.5 px-4 font-mono font-bold text-amber-600 whitespace-nowrap">
-                        +{s.currency} {Math.round(s.platform_commission).toLocaleString('en-US')}
+                        +RM {Number(s.platform_commission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       <td className="py-3.5 px-4 font-mono font-black text-emerald-700 whitespace-nowrap text-sm">
-                        <span className="text-xs text-emerald-600 mr-1">{s.currency}</span>
-                        {Math.round(s.net_payout).toLocaleString('en-US')}
+                        <span className="text-xs text-emerald-600 mr-1">RM</span>
+                        {Number(s.net_payout).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
 
                       <td className="py-3.5 px-4 whitespace-nowrap">

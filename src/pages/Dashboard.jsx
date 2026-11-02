@@ -24,46 +24,31 @@ export default function Dashboard({
   selectedRegion = 'all',
   onSelectRegion
 }) {
-  // Regional isolation filtering
+  // Regional isolation filtering for Malaysia
   const regionalData = useMemo(() => {
     let scopedHotels = hotels;
     let scopedBookings = bookings;
-    let currencySymbol = 'S$';
-    let currencyCode = 'SGD';
+    const currencySymbol = 'RM';
+    const currencyCode = 'MYR';
 
-    if (selectedRegion === 'Indonesia') {
-      scopedHotels = hotels.filter(h => (h.country || '').toLowerCase().includes('indonesia'));
-      scopedBookings = bookings.filter(b => (b.hotel?.country || '').toLowerCase().includes('indonesia'));
-      currencySymbol = 'Rp';
-      currencyCode = 'IDR';
-    } else if (selectedRegion === 'Malaysia') {
-      scopedHotels = hotels.filter(h => (h.country || '').toLowerCase().includes('malaysia'));
-      scopedBookings = bookings.filter(b => (b.hotel?.country || '').toLowerCase().includes('malaysia'));
-      currencySymbol = 'RM';
-      currencyCode = 'MYR';
-    } else if (selectedRegion === 'Singapore') {
-      scopedHotels = hotels.filter(h => (h.country || '').toLowerCase().includes('singapore'));
-      scopedBookings = bookings.filter(b => (b.hotel?.country || '').toLowerCase().includes('singapore'));
-      currencySymbol = 'S$';
-      currencyCode = 'SGD';
+    if (selectedRegion && selectedRegion !== 'all') {
+      const q = selectedRegion.toLowerCase();
+      scopedHotels = hotels.filter(h => 
+        (h.city || '').toLowerCase().includes(q) || 
+        (h.area || '').toLowerCase().includes(q)
+      );
+      scopedBookings = bookings.filter(b => 
+        (b.hotel?.city || '').toLowerCase().includes(q) || 
+        (b.hotel?.area || '').toLowerCase().includes(q)
+      );
     }
 
     const totalGBV = scopedBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-    // If no scoped bookings exist yet in mock, fallback to proportional
-    const displayGBV = totalGBV > 0 ? totalGBV : (
-      selectedRegion === 'Indonesia' ? 48500000 :
-      selectedRegion === 'Malaysia' ? 14200000 :
-      selectedRegion === 'Singapore' ? 23850000 :
-      (stats?.total_gbv || 41220000)
-    );
+    const displayGBV = totalGBV > 0 ? totalGBV : (stats?.total_gbv || 10210);
 
     const netRevenue = displayGBV * 0.15;
     const activeProperties = scopedHotels.filter(h => h.status === 'active').length;
-    const totalProperties = scopedHotels.length || (
-      selectedRegion === 'Indonesia' ? 6 :
-      selectedRegion === 'Malaysia' ? 6 :
-      selectedRegion === 'Singapore' ? 5 : 17
-    );
+    const totalProperties = scopedHotels.length || 16;
 
     return {
       scopedHotels,
@@ -74,18 +59,18 @@ export default function Dashboard({
       netRevenue,
       activeProperties,
       totalProperties,
-      totalBookings: scopedBookings.length || (selectedRegion === 'all' ? 4 : 2)
+      totalBookings: scopedBookings.length || 4
     };
   }, [hotels, bookings, selectedRegion, stats]);
 
   const formatCurrency = (amount) => {
-    if (!amount) return `${regionalData.currencySymbol} 0`;
-    return `${regionalData.currencySymbol} ${Math.round(amount).toLocaleString('en-US')}`;
+    if (amount === undefined || amount === null || isNaN(amount)) return 'RM 0.00';
+    return `RM ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const currentRegionName = selectedRegion === 'all'
-    ? 'Semua Wilayah (Cross-Border HQ)'
-    : selectedRegion === 'Indonesia' ? '🇮🇩 Indonesia' : selectedRegion === 'Malaysia' ? '🇲🇾 Malaysia' : '🇸🇬 Singapore';
+    ? 'Seluruh Malaysia (National HQ)'
+    : `Wilayah ${selectedRegion}`;
 
   return (
     <div className="w-full space-y-5 sm:space-y-6">
@@ -102,8 +87,8 @@ export default function Dashboard({
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
             {selectedRegion === 'all'
-              ? 'Monitoring gabungan 3 negara: Singapura, Malaysia, dan Indonesia dalam satu dashboard terintegrasi.'
-              : `Dashboard terisolasi khusus wilayah ${selectedRegion}. Semua metrik omzet, komisi 15%, dan booking difokuskan pada negara ini.`}
+              ? 'Monitoring operasi dan transaksi 16 hotel & resort mewah di seluruh Malaysia dalam mata uang Ringgit Malaysia (MYR).'
+              : `Dashboard terisolasi khusus wilayah ${selectedRegion}. Semua metrik omzet, komisi 15%, dan tempahan difokuskan pada kawasan ini.`}
           </p>
         </div>
 
@@ -113,7 +98,7 @@ export default function Dashboard({
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all self-start md:self-auto cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Lihat Semua Negara</span>
+            <span>Lihat Seluruh Malaysia</span>
           </button>
         )}
       </div>
@@ -200,87 +185,110 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* 3. Regional Market Presence Selector Pills */}
+      {/* 3. Regional Market Presence Selector Pills (Malaysia Destinations) */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Pilah Wilayah Teritori</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Klik salah satu wilayah untuk menyaring dashboard dan data hotel secara instan:</p>
+            <h2 className="text-base font-bold text-slate-900">Pilah Destinasi Malaysia</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Pilih kawasan pelancongan utama untuk menapis papan pemuka dan data hotel:</p>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-700 self-start sm:self-auto">
             <Globe2 className="w-3.5 h-3.5 text-brand-600" />
-            <span>Multi-Market Router</span>
+            <span>Kawasan Utama</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-          {/* Indonesia */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Kuala Lumpur */}
           <button
-            onClick={() => onSelectRegion('Indonesia')}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-              selectedRegion === 'Indonesia'
+            onClick={() => onSelectRegion('Kuala Lumpur')}
+            className={`p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedRegion === 'Kuala Lumpur'
                 ? 'bg-amber-500/10 border-amber-500 shadow-sm ring-2 ring-amber-500/20'
                 : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span className="text-lg">🇮🇩</span>
-                <span>Indonesia</span>
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🏙️</span>
+                <span>Kuala Lumpur</span>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-black font-mono ${
-                selectedRegion === 'Indonesia' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
+                selectedRegion === 'Kuala Lumpur' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
               }`}>
-                6 Hotels
+                5 Hotel
               </span>
             </div>
-            <div className="text-xs text-slate-500">Bali, Jakarta, Bandung, Yogyakarta • IDR (Rp)</div>
+            <div className="text-xs text-slate-500 truncate">KLCC, Bukit Bintang & Kia Peng</div>
           </button>
 
-          {/* Malaysia */}
+          {/* Langkawi */}
           <button
-            onClick={() => onSelectRegion('Malaysia')}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-              selectedRegion === 'Malaysia'
+            onClick={() => onSelectRegion('Langkawi')}
+            className={`p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedRegion === 'Langkawi'
                 ? 'bg-amber-500/10 border-amber-500 shadow-sm ring-2 ring-amber-500/20'
                 : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span className="text-lg">🇲🇾</span>
-                <span>Malaysia</span>
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🏝️</span>
+                <span>Langkawi & Kedah</span>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-black font-mono ${
-                selectedRegion === 'Malaysia' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
+                selectedRegion === 'Langkawi' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
               }`}>
-                6 Hotels
+                3 Resort
               </span>
             </div>
-            <div className="text-xs text-slate-500">Kuala Lumpur, Langkawi, Penang • MYR (RM)</div>
+            <div className="text-xs text-slate-500 truncate">Teluk Datai & Tanjung Rhu</div>
           </button>
 
-          {/* Singapore */}
+          {/* Penang */}
           <button
-            onClick={() => onSelectRegion('Singapore')}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-              selectedRegion === 'Singapore'
+            onClick={() => onSelectRegion('Penang')}
+            className={`p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedRegion === 'Penang'
                 ? 'bg-amber-500/10 border-amber-500 shadow-sm ring-2 ring-amber-500/20'
                 : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span className="text-lg">🇸🇬</span>
-                <span>Singapore</span>
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>🏛️</span>
+                <span>Pulau Pinang</span>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-black font-mono ${
-                selectedRegion === 'Singapore' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
+                selectedRegion === 'Penang' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
               }`}>
-                5 Hotels
+                3 Hotel
               </span>
             </div>
-            <div className="text-xs text-slate-500">Marina Bay, Sentosa, Bras Basah • SGD (S$)</div>
+            <div className="text-xs text-slate-500 truncate">George Town UNESCO & Batu Ferringhi</div>
+          </button>
+
+          {/* Melaka & Johor */}
+          <button
+            onClick={() => onSelectRegion('Melaka')}
+            className={`p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              selectedRegion === 'Melaka'
+                ? 'bg-amber-500/10 border-amber-500 shadow-sm ring-2 ring-amber-500/20'
+                : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span>⛵</span>
+                <span>Melaka & Johor</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono ${
+                selectedRegion === 'Melaka' ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
+              }`}>
+                3 Hotel
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 truncate">Sungai Melaka & Desaru Coast</div>
           </button>
         </div>
       </div>
@@ -336,12 +344,10 @@ export default function Dashboard({
                       <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">{b.guest_name}</td>
                       <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">{checkInStr} – {checkOutStr}</td>
                       <td className="py-3.5 px-4 font-bold text-slate-900 font-mono whitespace-nowrap">
-                        <span className="text-xs text-slate-500 mr-1">{b.currency}</span>
-                        {Math.round(b.total_amount).toLocaleString('en-US')}
+                        {formatCurrency(b.total_amount)}
                       </td>
                       <td className="py-3.5 px-4 font-bold text-amber-600 font-mono whitespace-nowrap">
-                        <span className="text-xs text-amber-500 mr-1">{b.currency}</span>
-                        {Math.round(commission).toLocaleString('en-US')}
+                        {formatCurrency(commission)}
                       </td>
                       <td className="py-3.5 px-5 text-right whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${

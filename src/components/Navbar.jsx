@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ShieldCheck, Bell, LogOut, Globe2, Activity, Menu, X, ChevronDown, Check } from 'lucide-react';
 
 export const REGIONS = [
-  { id: 'all', name: 'Semua Wilayah', flag: '🌐', short: 'Semua', currency: 'Multi-FX', label: 'Cross-Border 3 Negara' },
-  { id: 'Indonesia', name: 'Indonesia', flag: '🇮🇩', short: 'ID', currency: 'IDR', label: 'Bali, Jakarta, Bandung, Jogja' },
-  { id: 'Malaysia', name: 'Malaysia', flag: '🇲🇾', short: 'MY', currency: 'MYR', label: 'Kuala Lumpur, Penang, Langkawi' },
-  { id: 'Singapore', name: 'Singapore', flag: '🇸🇬', short: 'SG', currency: 'SGD', label: 'Marina Bay, Sentosa, Bras Basah' },
+  { id: 'all', name: 'Seluruh Malaysia', flag: '🇲🇾', short: 'Malaysia', currency: 'MYR', label: '16 Hotel & Resort Mewah' },
+  { id: 'Kuala Lumpur', name: 'Kuala Lumpur', flag: '🏙️', short: 'KL', currency: 'MYR', label: 'KLCC, Bukit Bintang & Kia Peng' },
+  { id: 'Langkawi', name: 'Langkawi & Kedah', flag: '🏝️', short: 'Langkawi', currency: 'MYR', label: 'Teluk Datai, Tanjung Rhu, Pantai Kok' },
+  { id: 'Penang', name: 'Pulau Pinang', flag: '🏛️', short: 'Penang', currency: 'MYR', label: 'George Town UNESCO, Batu Ferringhi' },
+  { id: 'Melaka', name: 'Melaka & Johor', flag: '⛵', short: 'Melaka/Johor', currency: 'MYR', label: 'Sungai Melaka & Desaru Coast' },
+  { id: 'Borneo', name: 'Sabah & Pahang', flag: '🌄', short: 'Borneo/Highlands', currency: 'MYR', label: 'Kota Kinabalu, Cameron & Genting' },
 ];
 
 export default function Navbar({ 
@@ -52,22 +54,22 @@ export default function Navbar({
           <div className="shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-extrabold text-slate-900 tracking-tight text-sm sm:text-base whitespace-nowrap">
-                Hotels HQ
+                Hotels HQ Malaysia
               </span>
               <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-900 text-amber-300 shrink-0">
-                Superadmin
+                HQ Tower
               </span>
             </div>
             {/* Hidden on mobile to prevent squishing */}
             <p className="hidden md:block text-[11px] text-slate-500 font-medium truncate">
-              Regional Cross-Border OTA Platform
+              Malaysia Premier OTA Control Tower
             </p>
           </div>
         </div>
 
         <div className="hidden xl:flex items-center gap-2 ml-3 pl-3 border-l border-slate-200">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs text-slate-600 font-semibold">SG • MY • ID Live</span>
+          <span className="text-xs text-slate-600 font-semibold">🇲🇾 MYR Live Engine</span>
         </div>
       </div>
 
@@ -143,7 +145,7 @@ export default function Navbar({
               </div>
 
               <div className="mt-2 pt-2 border-t border-slate-100 px-3 py-1 text-[10px] text-slate-400 leading-relaxed">
-                💡 Memilih region akan otomatis mengisolasi hotel, booking, omzet, dan settlement ke negara tersebut.
+                💡 Memilih wilayah akan otomatis menyaring hotel, tempahan, dan penyata kewangan ke kawasan tersebut di Malaysia.
               </div>
             </div>
           )}

@@ -12,11 +12,13 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export default function PlatformSettings({ selectedRegion = 'all' }) {
-  const currencies = [
-    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: '1.000 (Base)', flag: '🇸🇬', country: 'Singapore' },
-    { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', rate: '3.485 MYR/SGD', flag: '🇲🇾', country: 'Malaysia' },
-    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', rate: '11,850 IDR/SGD', flag: '🇮🇩', country: 'Indonesia' },
+export default function PlatformSettings() {
+  const paymentRails = [
+    { code: 'FPX', name: 'Financial Process Exchange (B2C & B2B)', rate: 'Semua Bank Malaysia', flag: '🏦' },
+    { code: 'DuitNow', name: 'DuitNow QR & Real-time PayNet', rate: 'Serta-merta (Instant)', flag: '⚡' },
+    { code: 'Maybank2u', name: 'Malayan Banking Berhad Gateway', rate: 'Mitra Bank Utama', flag: '🦁' },
+    { code: 'CIMB Clicks', name: 'CIMB Bank Settlement Rail', rate: 'Mitra Pembayaran Sah', flag: '🔴' },
+    { code: 'TNG eWallet', name: "Touch 'n Go eWallet & DuitNow", rate: 'Dompet Digital Malaysia', flag: '💳' },
   ];
 
   return (
@@ -26,14 +28,14 @@ export default function PlatformSettings({ selectedRegion = 'all' }) {
         <div>
           <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Platform Policy & Regional Rules
+              Platform Policy & Malaysia Regulations
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300">
-              Regional Standard
+              Malaysia National Standard
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl">
-            Global commission agreements, multi-currency conversion reference, and system telemetry across sovereign markets.
+            Perjanjian komisen 15%, integrasi gerbang pembayaran tempatan (FPX & DuitNow), dan pematuhan cukai SST / Cukai Pelancongan (TTx).
           </p>
         </div>
       </div>
@@ -48,78 +50,61 @@ export default function PlatformSettings({ selectedRegion = 'all' }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Standard Platform Take Rate</h3>
-              <p className="text-xs text-slate-500">Uniform across all verified hotel partners</p>
+              <p className="text-xs text-slate-500">Kadar seragam untuk rakan hotel Malaysia berdaftar</p>
             </div>
           </div>
 
           <div className="p-4 sm:p-5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex items-center justify-between">
             <div>
               <div className="text-3xl font-black text-slate-900 font-mono tracking-tight">15.0%</div>
-              <div className="text-xs text-slate-500 mt-1">Deducted automatically per confirmed guest checkout</div>
+              <div className="text-xs text-slate-500 mt-1">Dipotong secara automatik bagi setiap tempahan disahkan</div>
             </div>
             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold text-xs">
-              Active Policy
+              Polisi Aktif (MYR)
             </span>
           </div>
 
           <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
-            Covers payment gateway processing fees, cross-border settlement, marketing customer acquisition, and 24/7 guest customer support.
+            Merangkumi yuran gerbang pembayaran FPX & DuitNow, kos pemerolehan tetamu, promosi pelancongan Malaysia, dan sokongan concierge 24/7.
           </p>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Escrow Settlement Cycle</span>
-            <strong className="text-slate-900 font-bold">T+1 Post Check-in</strong>
+            <span>Kitaran Pindahan Wang Rakan</span>
+            <strong className="text-slate-900 font-bold">T+1 Selepas Daftar Masuk</strong>
           </div>
         </div>
 
-        {/* Currency Rates Matrix */}
+        {/* Local Payment Rails Card */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <Coins className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Multi-Currency Liquidity Pool</h3>
-              <p className="text-xs text-slate-500">Real-time cross-border FX benchmark</p>
+              <h3 className="text-base font-bold text-slate-900">Saluran Pembayaran Malaysia</h3>
+              <p className="text-xs text-slate-500">Integrasi gerbang kewangan rasmi PayNet & Perbankan Tempatan</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            {currencies.map((c) => {
-              const isRegionSelected = selectedRegion.toLowerCase() === c.country.toLowerCase();
-              return (
-                <div 
-                  key={c.code} 
-                  className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                    isRegionSelected
-                      ? 'bg-amber-500/10 border-amber-500/80 shadow-xs ring-1 ring-amber-500/30'
-                      : 'bg-slate-50/80 border-slate-200/80'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-lg">{c.flag}</span>
-                    <div>
-                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                        <span>{c.code} ({c.symbol})</span>
-                        {isRegionSelected && (
-                          <span className="px-1.5 py-0.2 bg-amber-600 text-white rounded text-[10px] font-bold">
-                            Active Scope
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-500">{c.name}</div>
-                    </div>
-                  </div>
-                  <div className="text-right font-mono font-bold text-slate-800 text-xs sm:text-sm">
-                    {c.rate}
+            {paymentRails.map((rail) => (
+              <div key={rail.code} className="p-3 sm:p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">{rail.flag}</span>
+                  <div>
+                    <div className="font-bold text-slate-900">{rail.code}</div>
+                    <div className="text-[11px] text-slate-500">{rail.name}</div>
                   </div>
                 </div>
-              );
-            })}
+                <div className="text-right font-mono font-bold text-slate-800 text-xs sm:text-sm">
+                  {rail.rate}
+                </div>
+              </div>
+            ))}
           </div>
 
           <p className="text-slate-500 text-xs leading-relaxed">
-            Spot FX rates synchronized with monetary authorities to eliminate conversion risk for sovereign partners.
+            Semua transaksi diproses dalam Ringgit Malaysia (MYR) mengikut garis panduan Bank Negara Malaysia (BNM).
           </p>
         </div>
 
